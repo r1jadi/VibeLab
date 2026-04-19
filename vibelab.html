@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>VibeLab — Aesthetic Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:ital,wght@0,400;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --black: #0A0A0A;
+    --white: #F5F2EB;
+    --amber: #F4A23A;
+    --cyan: #00F5D4;
+    --magenta: #FF2D6B;
+    --yellow: #F5E642;
+    --violet: #7B5CF6;
+    --font-display: 'Syne', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
+    --font-mono: 'DM Mono', monospace;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--black);
+    color: var(--white);
+    font-family: var(--font-body);
+    overflow-x: hidden;
+    cursor: none;
+  }
+
+  /* Custom cursor */
+  #cursor {
+    width: 12px; height: 12px;
+    background: var(--cyan);
+    border-radius: 50%;
+    position: fixed;
+    pointer-events: none;
+    z-index: 9999;
+    transform: translate(-50%,-50%);
+    transition: transform 0.1s, background 0.2s, width 0.2s, height 0.2s;
+    mix-blend-mode: difference;
+  }
+  #cursor.big { width: 40px; height: 40px; background: var(--magenta); }
+
+  /* NAV */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.25rem 3rem;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    backdrop-filter: blur(12px);
+    background: rgba(10,10,10,0.7);
+  }
+  .nav-logo {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 1.3rem;
+    letter-spacing: -0.02em;
+    color: var(--white);
+    text-decoration: none;
+  }
+  .nav-logo span { color: var(--cyan); }
+  .nav-links { display: flex; gap: 2rem; list-style: none; }
+  .nav-links a { color: rgba(245,242,235,0.5); text-decoration: none; font-size: 0.875rem; letter-spacing: 0.04em; transition: color 0.2s; }
+  .nav-links a:hover { color: var(--white); }
+  .nav-cta {
+    background: var(--cyan);
+    color: var(--black);
+    border: none;
+    padding: 0.6rem 1.4rem;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 0.875rem;
+    border-radius: 100px;
+    cursor: none;
+    transition: transform 0.15s, background 0.2s;
+    letter-spacing: 0.02em;
+  }
+  .nav-cta:hover { transform: scale(1.04); background: var(--yellow); }
+
+  /* HERO */
+  #hero {
+    min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center;
+    padding: 8rem 2rem 4rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-bg {
+    position: absolute; inset: 0;
+    z-index: 0;
+    overflow: hidden;
+  }
+  .blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.18;
+    animation: drift 12s ease-in-out infinite alternate;
+  }
+  .blob-1 { width: 600px; height: 600px; background: var(--amber); top: -200px; left: -200px; animation-delay: 0s; }
+  .blob-2 { width: 500px; height: 500px; background: var(--magenta); top: 100px; right: -150px; animation-delay: -4s; }
+  .blob-3 { width: 400px; height: 400px; background: var(--cyan); bottom: -100px; left: 30%; animation-delay: -8s; }
+  @keyframes drift { from { transform: translate(0,0) scale(1); } to { transform: translate(40px, 30px) scale(1.08); } }
+
+  .hero-tag {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.14em;
+    color: var(--cyan);
+    background: rgba(0,245,212,0.1);
+    border: 1px solid rgba(0,245,212,0.25);
+    padding: 0.4rem 1rem;
+    border-radius: 100px;
+    margin-bottom: 2rem;
+    display: inline-block;
+    position: relative; z-index: 1;
+    animation: fadeUp 0.6s ease both;
+  }
+  .hero-title {
+    font-family: var(--font-display);
+    font-size: clamp(3.5rem, 9vw, 8rem);
+    font-weight: 800;
+    line-height: 0.92;
+    letter-spacing: -0.04em;
+    position: relative; z-index: 1;
+    animation: fadeUp 0.7s ease 0.1s both;
+  }
+  .hero-title .line2 { color: var(--amber); display: block; }
+  .hero-title .line3 { color: var(--magenta); display: block; font-style: italic; }
+
+  .hero-sub {
+    font-size: 1.15rem;
+    color: rgba(245,242,235,0.55);
+    max-width: 500px;
+    line-height: 1.7;
+    margin: 2rem auto 3rem;
+    position: relative; z-index: 1;
+    animation: fadeUp 0.7s ease 0.2s both;
+  }
+
+  .hero-actions {
+    display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;
+    position: relative; z-index: 1;
+    animation: fadeUp 0.7s ease 0.3s both;
+  }
+  .btn-big {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1rem;
+    padding: 0.9rem 2.2rem;
+    border-radius: 100px;
+    cursor: none;
+    border: none;
+    transition: transform 0.15s;
+    letter-spacing: 0.01em;
+  }
+  .btn-big:hover { transform: scale(1.04) translateY(-2px); }
+  .btn-primary { background: var(--magenta); color: var(--white); }
+  .btn-ghost { background: transparent; color: var(--white); border: 1.5px solid rgba(255,255,255,0.25); }
+  .btn-ghost:hover { border-color: var(--white); }
+
+  /* TICKER */
+  .ticker-wrap {
+    overflow: hidden;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    padding: 0.9rem 0;
+    background: rgba(255,255,255,0.03);
+    margin-top: 5rem;
+    position: relative; z-index: 1;
+    width: 100%;
+  }
+  .ticker {
+    display: flex; gap: 3rem;
+    white-space: nowrap;
+    animation: ticker 28s linear infinite;
+    width: max-content;
+  }
+  .ticker span { font-family: var(--font-mono); font-size: 0.8rem; color: rgba(245,242,235,0.35); letter-spacing: 0.06em; }
+  .ticker span.accent { color: var(--amber); }
+  @keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+  @keyframes fadeUp { from { opacity:0; transform: translateY(24px); } to { opacity:1; transform: translateY(0); } }
+
+  /* DEMO SECTION */
+  #demo {
+    padding: 7rem 2rem;
+    max-width: 960px;
+    margin: 0 auto;
+  }
+  .section-tag {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    color: var(--magenta);
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+    display: block;
+  }
+  .section-title {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+    margin-bottom: 3.5rem;
+  }
+  .section-title em { font-style: italic; color: var(--amber); }
+
+  /* Generator UI */
+  .gen-wrap {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 24px;
+    padding: 2.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .gen-wrap::before {
+    content: '';
+    position: absolute;
+    top: -1px; left: 10%; right: 10%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+  }
+
+  .gen-input-row {
+    display: flex; gap: 12px; align-items: stretch;
+    margin-bottom: 1.5rem;
+  }
+  .gen-input {
+    flex: 1;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 14px;
+    padding: 1rem 1.25rem;
+    font-family: var(--font-body);
+    font-size: 1rem;
+    color: var(--white);
+    outline: none;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .gen-input::placeholder { color: rgba(245,242,235,0.3); }
+  .gen-input:focus { border-color: var(--cyan); background: rgba(0,245,212,0.04); }
+
+  .gen-btn {
+    background: var(--cyan);
+    color: var(--black);
+    border: none;
+    padding: 1rem 1.8rem;
+    border-radius: 14px;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: none;
+    transition: transform 0.15s, background 0.2s;
+    white-space: nowrap;
+  }
+  .gen-btn:hover { transform: scale(1.04); background: var(--yellow); }
+
+  .gen-pills { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 2rem; }
+  .gen-pill {
+    font-size: 0.78rem;
+    font-family: var(--font-mono);
+    color: rgba(245,242,235,0.55);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 100px;
+    padding: 0.35rem 0.9rem;
+    cursor: none;
+    transition: all 0.2s;
+    background: transparent;
+  }
+  .gen-pill:hover { color: var(--white); border-color: rgba(255,255,255,0.35); background: rgba(255,255,255,0.05); }
+
+  /* Result */
+  #result { display: none; animation: fadeUp 0.4s ease both; }
+  .palette-row { display: flex; gap: 8px; margin-bottom: 1.5rem; }
+  .swatch { flex:1; height: 68px; border-radius: 12px; display:flex; align-items:flex-end; padding: 7px 9px; }
+  .swatch span { font-size: 10px; font-family: var(--font-mono); font-weight: 500; }
+
+  .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+  .result-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 1rem 1.25rem;
+  }
+  .result-card .label { font-size: 0.7rem; font-family: var(--font-mono); color: rgba(245,242,235,0.4); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 5px; }
+  .result-card .value { font-size: 0.95rem; font-weight: 500; color: var(--white); }
+  .result-card.wide { grid-column: span 2; }
+  .result-card .big-value { font-size: 1.05rem; color: var(--white); font-style: italic; line-height: 1.5; }
+  .result-card .sub-value { font-size: 0.85rem; color: rgba(245,242,235,0.5); margin-top: 4px; }
+
+  .tag-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+  .tag {
+    font-size: 0.75rem; font-family: var(--font-mono);
+    color: rgba(245,242,235,0.6);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 100px;
+    padding: 3px 10px;
+  }
+
+  .copy-btn {
+    width: 100%; margin-top: 1rem;
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.15);
+    color: rgba(245,242,235,0.6);
+    padding: 0.75rem;
+    border-radius: 12px;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+    cursor: none;
+    transition: all 0.2s;
+  }
+  .copy-btn:hover { background: rgba(255,255,255,0.06); color: var(--white); border-color: rgba(255,255,255,0.3); }
+
+  /* HOW IT WORKS */
+  #how {
+    padding: 7rem 2rem;
+    max-width: 960px;
+    margin: 0 auto;
+  }
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; margin-top: 1rem; }
+  .step {
+    position: relative;
+    padding: 2rem;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 20px;
+    background: rgba(255,255,255,0.03);
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .step:hover { border-color: rgba(255,255,255,0.2); background: rgba(255,255,255,0.05); }
+  .step-num {
+    font-family: var(--font-display);
+    font-size: 3.5rem;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 1rem;
+    opacity: 0.15;
+  }
+  .step:nth-child(1) .step-num { color: var(--amber); opacity: 1; }
+  .step:nth-child(2) .step-num { color: var(--cyan); opacity: 1; }
+  .step:nth-child(3) .step-num { color: var(--magenta); opacity: 1; }
+  .step-title { font-family: var(--font-display); font-size: 1.2rem; font-weight: 700; margin-bottom: 0.75rem; }
+  .step-desc { font-size: 0.9rem; color: rgba(245,242,235,0.5); line-height: 1.7; }
+
+  /* VIBES SHOWCASE */
+  #showcase {
+    padding: 7rem 2rem;
+    overflow: hidden;
+  }
+  #showcase .inner { max-width: 960px; margin: 0 auto; }
+  .vibe-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-top: 3rem;
+  }
+  .vibe-card {
+    border-radius: 20px;
+    padding: 2rem;
+    cursor: none;
+    transition: transform 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .vibe-card:hover { transform: translateY(-6px); }
+  .vibe-card .vc-tag { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.75rem; opacity: 0.6; }
+  .vibe-card .vc-title { font-family: var(--font-display); font-size: 1.35rem; font-weight: 800; margin-bottom: 0.5rem; line-height: 1.2; }
+  .vibe-card .vc-desc { font-size: 0.82rem; opacity: 0.6; line-height: 1.6; }
+  .vc-dots { display: flex; gap: 6px; margin-top: 1.25rem; }
+  .vc-dot { width: 18px; height: 18px; border-radius: 50%; }
+
+  .vibe-card.c1 { background: #1A0E00; color: #F5EEE0; border: 1px solid #3A2200; }
+  .vibe-card.c2 { background: #001412; color: #E0FAF5; border: 1px solid #003830; }
+  .vibe-card.c3 { background: #0F0016; color: #F0E0FF; border: 1px solid #2A0040; }
+  .vibe-card.c4 { background: #0A1200; color: #E8F5D0; border: 1px solid #1A3000; }
+  .vibe-card.c5 { background: #16000A; color: #FFE0F0; border: 1px solid #3A0020; }
+  .vibe-card.c6 { background: #100C00; color: #F5F0E0; border: 1px solid #2A2000; }
+
+  /* CTA SECTION */
+  #cta {
+    padding: 8rem 2rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .cta-bg {
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at center, rgba(244,162,58,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .cta-title {
+    font-family: var(--font-display);
+    font-size: clamp(2.5rem, 6vw, 5rem);
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 1;
+    margin-bottom: 1.5rem;
+    position: relative; z-index: 1;
+  }
+  .cta-title .highlight { color: var(--amber); }
+  .cta-sub { font-size: 1.05rem; color: rgba(245,242,235,0.5); margin-bottom: 2.5rem; position: relative; z-index: 1; }
+
+  /* FOOTER */
+  footer {
+    border-top: 1px solid rgba(255,255,255,0.06);
+    padding: 2rem 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .footer-logo { font-family: var(--font-display); font-weight: 800; font-size: 1rem; }
+  .footer-logo span { color: var(--cyan); }
+  .footer-note { font-size: 0.78rem; font-family: var(--font-mono); color: rgba(245,242,235,0.25); }
+
+  @media (max-width: 700px) {
+    nav { padding: 1rem 1.5rem; }
+    .nav-links { display: none; }
+    .steps { grid-template-columns: 1fr; }
+    .vibe-cards { grid-template-columns: 1fr 1fr; }
+    .result-grid { grid-template-columns: 1fr; }
+    .result-card.wide { grid-column: span 1; }
+    footer { flex-direction: column; gap: 1rem; text-align: center; }
+    .gen-input-row { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<div id="cursor"></div>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-logo">Vibe<span>Lab</span></a>
+  <ul class="nav-links">
+    <li><a href="#demo">Generator</a></li>
+    <li><a href="#how">How it works</a></li>
+    <li><a href="#showcase">Vibes</a></li>
+  </ul>
+  <button class="nav-cta" onclick="document.getElementById('demo').scrollIntoView({behavior:'smooth'})">Try it free</button>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-bg">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+  </div>
+  <span class="hero-tag">— aesthetic intelligence —</span>
+  <h1 class="hero-title">
+    Find your
+    <span class="line2">aesthetic.</span>
+    <span class="line3">Instantly.</span>
+  </h1>
+  <p class="hero-sub">Describe a mood, a feeling, a moment in time — and VibeLab generates your complete design aesthetic in seconds.</p>
+  <div class="hero-actions">
+    <button class="btn-big btn-primary" onclick="document.getElementById('demo').scrollIntoView({behavior:'smooth'})">Generate a vibe</button>
+    <button class="btn-big btn-ghost" onclick="document.getElementById('how').scrollIntoView({behavior:'smooth'})">See how it works</button>
+  </div>
+
+  <div class="ticker-wrap">
+    <div class="ticker" id="ticker-inner"></div>
+  </div>
+</section>
+
+<!-- DEMO -->
+<section id="demo">
+  <div style="max-width:960px; margin:0 auto; padding:0 2rem;">
+    <span class="section-tag">// generator</span>
+    <h2 class="section-title">Type anything.<br><em>Get everything.</em></h2>
+
+    <div class="gen-wrap">
+      <div class="gen-input-row">
+        <input class="gen-input" id="gen-inp" type="text" placeholder="e.g. 'golden hour rooftop party', 'neon Tokyo at 2am'..."/>
+        <button class="gen-btn" onclick="generate()">Generate ↗</button>
+      </div>
+      <div class="gen-pills" id="gen-pills"></div>
+      <div id="result"></div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="how">
+  <span class="section-tag">// process</span>
+  <h2 class="section-title">Three steps to<br><em>your aesthetic.</em></h2>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">01</div>
+      <div class="step-title">Describe the feeling</div>
+      <p class="step-desc">Write anything — a place, a time of day, an emotion, a scene. The more vivid, the better.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">02</div>
+      <div class="step-title">VibeLab reads the room</div>
+      <p class="step-desc">Our aesthetic engine decodes the emotional DNA of your input and maps it to a full design system.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">03</div>
+      <div class="step-title">Copy & create</div>
+      <p class="step-desc">Get your palette, fonts, imagery keywords, soundtrack, and design philosophy — ready to use anywhere.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SHOWCASE -->
+<section id="showcase">
+  <div class="inner">
+    <span class="section-tag">// featured vibes</span>
+    <h2 class="section-title">Every mood.<br><em>Every aesthetic.</em></h2>
+    <div class="vibe-cards">
+      <div class="vibe-card c1" onclick="fillAndGenerate('golden hour rooftop party')">
+        <div class="vc-tag">warm / euphoric</div>
+        <div class="vc-title">Golden hour rooftop</div>
+        <div class="vc-desc">Amber light, string lights, city below.</div>
+        <div class="vc-dots">
+          <div class="vc-dot" style="background:#F4A23A;"></div>
+          <div class="vc-dot" style="background:#F9C96A;"></div>
+          <div class="vc-dot" style="background:#E8755A;"></div>
+        </div>
+      </div>
+      <div class="vibe-card c2" onclick="fillAndGenerate('neon tokyo convenience store at 2am')">
+        <div class="vc-tag">neon / electric</div>
+        <div class="vc-title">Neon Tokyo 2am</div>
+        <div class="vc-desc">Fluorescent light, wet streets, solitude.</div>
+        <div class="vc-dots">
+          <div class="vc-dot" style="background:#FF2D6B;"></div>
+          <div class="vc-dot" style="background:#00F5D4;"></div>
+          <div class="vc-dot" style="background:#0D0D1A;"></div>
+        </div>
+      </div>
+      <div class="vibe-card c3" onclick="fillAndGenerate('dark academia library at midnight')">
+        <div class="vc-tag">dark / brooding</div>
+        <div class="vc-title">Midnight library</div>
+        <div class="vc-desc">Candlelight, old books, quiet ambition.</div>
+        <div class="vc-dots">
+          <div class="vc-dot" style="background:#8B6914;"></div>
+          <div class="vc-dot" style="background:#3D2B1F;"></div>
+          <div class="vc-dot" style="background:#C4A882;"></div>
+        </div>
+      </div>
+      <div class="vibe-card c4" onclick="fillAndGenerate('cottagecore bakery rainy Sunday')">
+        <div class="vc-tag">nature / soft</div>
+        <div class="vc-title">Cottagecore bakery</div>
+        <div class="vc-desc">Warm bread, pressed flowers, morning rain.</div>
+        <div class="vc-dots">
+          <div class="vc-dot" style="background:#6B8F5E;"></div>
+          <div class="vc-dot" style="background:#A8C090;"></div>
+          <div class="vc-dot" style="background:#E8D5A3;"></div>
+        </div>
+      </div>
+      <div class="vibe-card c5" onclick="fillAndGenerate('midnight jazz bar in the rain')">
+        <div class="vc-tag">dark / smoky</div>
+        <div class="vc-title">Midnight jazz bar</div>
+        <div class="vc-desc">Smoke, brass, the blues at closing time.</div>
+        <div class="vc-dots">
+          <div class="vc-dot" style="background:#1A1208;"></div>
+          <div class="vc-dot" style="background:#8B6914;"></div>
+          <div class="vc-dot" style="background:#C4A882;"></div>
+        </div>
+      </div>
+      <div class="vibe-card c6" onclick="fillAndGenerate('desert rave at sunrise')">
+        <div class="vc-tag">warm / electric</div>
+        <div class="vc-title">Desert rave sunrise</div>
+        <div class="vc-desc">Bass, dust, the horizon turning gold.</div>
+        <div class="vc-dots">
+          <div class="vc-dot" style="background:#F4A23A;"></div>
+          <div class="vc-dot" style="background:#FF2D6B;"></div>
+          <div class="vc-dot" style="background:#F5E642;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section id="cta">
+  <div class="cta-bg"></div>
+  <h2 class="cta-title">What's your<br><span class="highlight">vibe?</span></h2>
+  <p class="cta-sub">Start with a feeling. End with a full aesthetic.</p>
+  <button class="btn-big btn-primary" onclick="document.getElementById('demo').scrollIntoView({behavior:'smooth'});document.getElementById('gen-inp').focus();">Find my vibe →</button>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">Vibe<span>Lab</span></div>
+  <div class="footer-note">© 2026 — aesthetic intelligence for humans</div>
+</footer>
+
+<script>
+const VIBES = {
+  keywords: {
+    warm: ['golden','sunset','amber','warm','fire','candle','autumn','desert','honey','terracotta','rooftop','summer','tropical','rave','sunrise'],
+    cool: ['ocean','rain','fog','mist','blue','ice','snow','winter','nordic','minimal','clean','morning'],
+    neon: ['neon','tokyo','cyber','night','club','electric','80s','retro','arcade','synthwave','vaporwave','2am','midnight','convenience'],
+    dark: ['dark','noir','gothic','shadow','mystery','underground','jazz','library','academia','moody','whiskey'],
+    nature: ['forest','garden','cottage','floral','botanical','earth','moss','cabin','meadow','pastoral','green','wood','bakery','cottagecore'],
+    luxury: ['marble','silk','velvet','champagne','gold','glamour','party','gala','editorial','fashion','luxury'],
+  },
+  palettes: {
+    warm: [{h:'#F4A23A',n:'burnt amber'},{h:'#F9C96A',n:'warm honey'},{h:'#E8755A',n:'terracotta'},{h:'#2B1A0D',n:'espresso'},{h:'#F5EEE0',n:'linen cream'}],
+    cool: [{h:'#C8E6F5',n:'pale sky'},{h:'#7DB8D4',n:'soft blue'},{h:'#3A7CA5',n:'ocean depth'},{h:'#1C3A4A',n:'deep teal'},{h:'#F0F4F8',n:'mist white'}],
+    neon: [{h:'#FF2D6B',n:'hot magenta'},{h:'#00F5D4',n:'electric cyan'},{h:'#F5E642',n:'konbini yellow'},{h:'#0D0D1A',n:'midnight'},{h:'#E8E4F0',n:'fluorescent white'}],
+    dark: [{h:'#1A1208',n:'near black'},{h:'#3D2B1F',n:'dark walnut'},{h:'#8B6914',n:'aged gold'},{h:'#C4A882',n:'parchment'},{h:'#E8E0D0',n:'old ivory'}],
+    nature: [{h:'#2D4A2D',n:'deep forest'},{h:'#6B8F5E',n:'sage'},{h:'#A8C090',n:'lichen'},{h:'#E8D5A3',n:'straw'},{h:'#F5F0E8',n:'birch white'}],
+    luxury: [{h:'#1A1A2E',n:'midnight navy'},{h:'#C9A84C',n:'champagne gold'},{h:'#8B7355',n:'warm bronze'},{h:'#E8E0D0',n:'cream silk'},{h:'#F8F4EE',n:'ivory'}],
+  },
+  fonts: {
+    warm: {h:'Cormorant Garamond — editorial elegance with a sun-soaked warmth',b:'DM Sans — clean and airy, keeps it social without losing warmth'},
+    cool: {h:'Neue Haas Grotesk — precise and breathable like cold morning air',b:'Inter — functional clarity that never intrudes'},
+    neon: {h:'Noto Sans JP — sharp and utilitarian, native to the streets',b:'Space Mono — monospaced coldness like a receipt printer'},
+    dark: {h:'Playfair Display — classical weight, literary authority',b:'Lora — serif body that reads like aged paper'},
+    nature: {h:'Freight Text — organic warmth, feels hand-set',b:'Jost — modern grounding without losing the earthiness'},
+    luxury: {h:'Bodoni Moda — high contrast, aspirational tension',b:'Garamond — timeless body, quiet confidence'},
+  },
+  moods: {
+    warm: {mood:'Warm & euphoric',energy:'Loose & luminous'},
+    cool: {mood:'Clear & contemplative',energy:'Still & spacious'},
+    neon: {mood:'Quietly electric',energy:'Solitary & humming'},
+    dark: {mood:'Rich & brooding',energy:'Slow & smoky'},
+    nature: {mood:'Grounded & alive',energy:'Soft & unhurried'},
+    luxury: {mood:'Refined & magnetic',energy:'Poised & deliberate'},
+  },
+  imagery: {
+    warm: ['string lights','long shadows','linen texture','condensation on glass','city skyline silhouette'],
+    cool: ['sea glass','fog on water','worn driftwood','pale stone','open horizon'],
+    neon: ['wet pavement reflections','plastic packaging glare','kanji signage','fluorescent grid ceiling','onigiri wrappers'],
+    dark: ['cigarette smoke','candlelight on brick','cracked leather','aged whiskey glass','rain on windows'],
+    nature: ['pressed flowers','morning dew','woven baskets','sourdough crust','hand-thrown ceramics'],
+    luxury: ['marble veining','draped silk','gold leaf edge','crystal glassware','embossed letterhead'],
+  },
+  soundtracks: {
+    warm: 'Nu-disco / afrohouse — Fred again.., Khruangbin, Four Tet',
+    cool: 'Ambient / post-rock — Brian Eno, Sigur Rós, Nils Frahm',
+    neon: 'City pop / lo-fi ambient — Haruomi Hosono, Burial, Yaeji',
+    dark: 'Slow jazz / noir blues — Miles Davis, Nick Cave, Bill Evans',
+    nature: 'Folk / acoustic — Bon Iver, Big Thief, Adrianne Lenker',
+    luxury: 'Neo-soul / orchestral — Solange, Moses Sumney, Sade',
+  },
+  principles: {
+    warm: 'Let the light do the work — every element should feel like it\'s catching the last rays of sun.',
+    cool: 'Restraint is the statement — breathe space into every composition.',
+    neon: 'Harshness made beautiful — let artificial light and deep shadow coexist without apology.',
+    dark: 'Texture over color — let the richness of the surface tell the story.',
+    nature: 'Nothing is perfectly symmetrical — asymmetry is what makes it feel alive.',
+    luxury: 'One thing, done exquisitely — abundance is the enemy of elegance.',
+  }
+};
+
+const SUGGESTIONS = ['golden hour rooftop party','neon Tokyo at 2am','dark academia library','cottagecore rainy Sunday','desert rave at sunrise','midnight jazz bar'];
+const TICKER_ITEMS = ['golden hour rooftop','neon tokyo 2am','dark academia','cottagecore bakery','desert rave','midnight jazz','ocean at dawn','forest cabin','luxury gala','synthwave highway','misty morning','candlelit dinner'];
+
+function buildTicker() {
+  const t = document.getElementById('ticker-inner');
+  const items = [...TICKER_ITEMS,...TICKER_ITEMS].map(i=>`<span>${i}</span><span class="accent">✦</span>`).join('');
+  t.innerHTML = items;
+}
+
+function buildPills() {
+  const c = document.getElementById('gen-pills');
+  c.innerHTML = SUGGESTIONS.map(s=>`<button class="gen-pill" onclick="fillAndGenerate('${s}')">${s}</button>`).join('');
+}
+
+function classify(text) {
+  const t = text.toLowerCase();
+  const scores = {};
+  for (const [type, words] of Object.entries(VIBES.keywords)) {
+    scores[type] = words.filter(w => t.includes(w)).length;
+  }
+  const best = Object.entries(scores).sort((a,b)=>b[1]-a[1])[0];
+  if (best[1]===0) { const keys=Object.keys(VIBES.keywords); return keys[Math.floor(Math.random()*keys.length)]; }
+  return best[0];
+}
+
+function getContrastColor(hex) {
+  const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  return (0.299*r+0.587*g+0.114*b)/255>0.55?'#1a1a1a':'#f5f5f5';
+}
+
+let lastVibe = null;
+
+function generate() {
+  const input = document.getElementById('gen-inp').value.trim();
+  if (!input) return;
+  const type = classify(input);
+  const v = { input, type, palette: VIBES.palettes[type], ...VIBES.moods[type], fonts: VIBES.fonts[type], imagery: VIBES.imagery[type], soundtrack: VIBES.soundtracks[type], principle: VIBES.principles[type] };
+  lastVibe = v;
+  renderResult(v);
+  document.getElementById('demo').scrollIntoView({behavior:'smooth'});
+}
+
+function fillAndGenerate(text) {
+  document.getElementById('gen-inp').value = text;
+  generate();
+}
+
+function renderResult(v) {
+  const el = document.getElementById('result');
+  el.style.display = 'block';
+  el.innerHTML = `
+    <div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:1.5rem;">
+      <div style="font-family:var(--font-mono);font-size:0.7rem;letter-spacing:0.1em;color:var(--cyan);text-transform:uppercase;margin-bottom:1rem;">${v.input}</div>
+      <div class="palette-row">${v.palette.map(c=>`<div class="swatch" style="background:${c.h};"><span style="color:${getContrastColor(c.h)};">${c.n}</span></div>`).join('')}</div>
+      <div class="result-grid">
+        <div class="result-card"><div class="label">Mood</div><div class="value">${v.mood}</div></div>
+        <div class="result-card"><div class="label">Energy</div><div class="value">${v.energy}</div></div>
+        <div class="result-card wide"><div class="label">Font pairing</div><div class="big-value">${v.fonts.h}</div><div class="sub-value">${v.fonts.b}</div></div>
+        <div class="result-card wide"><div class="label">Imagery & textures</div><div class="tag-row">${v.imagery.map(t=>`<span class="tag">${t}</span>`).join('')}</div></div>
+        <div class="result-card wide"><div class="label">Soundtrack</div><div class="value">${v.soundtrack}</div></div>
+        <div class="result-card wide"><div class="label">Design principle</div><div class="value" style="font-style:italic;">${v.principle}</div></div>
+      </div>
+      <button class="copy-btn" onclick="copyVibe()">copy vibe summary</button>
+    </div>`;
+}
+
+function copyVibe() {
+  if (!lastVibe) return;
+  const v = lastVibe;
+  const text = `Vibe: ${v.input}\n\nMood: ${v.mood}\nEnergy: ${v.energy}\n\nPalette:\n${v.palette.map(c=>`  ${c.n}: ${c.h}`).join('\n')}\n\nFonts:\n  Heading: ${v.fonts.h}\n  Body: ${v.fonts.b}\n\nImagery: ${v.imagery.join(', ')}\nSoundtrack: ${v.soundtrack}\nDesign principle: ${v.principle}`;
+  navigator.clipboard.writeText(text).then(() => {
+    document.querySelector('.copy-btn').textContent = 'copied!';
+    setTimeout(()=>{ document.querySelector('.copy-btn').textContent = 'copy vibe summary'; }, 2000);
+  });
+}
+
+// Custom cursor
+const cursor = document.getElementById('cursor');
+document.addEventListener('mousemove', e => { cursor.style.left = e.clientX+'px'; cursor.style.top = e.clientY+'px'; });
+document.querySelectorAll('button, a, .vibe-card, .gen-pill').forEach(el => {
+  el.addEventListener('mouseenter', () => cursor.classList.add('big'));
+  el.addEventListener('mouseleave', () => cursor.classList.remove('big'));
+});
+
+document.getElementById('gen-inp').addEventListener('keydown', e => {
+  if (e.key === 'Enter') generate();
+});
+
+buildTicker();
+buildPills();
+</script>
+</body>
+</html>
